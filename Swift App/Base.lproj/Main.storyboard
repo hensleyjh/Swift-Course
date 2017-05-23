@@ -41,19 +41,44 @@
                                     <action selector="buttonCool:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ZA0-w7-uzm"/>
                                 </connections>
                             </button>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="vjD-5q-fde">
+                                <rect key="frame" x="137.5" y="200" width="100" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="100" id="Fvf-Ag-PCt"/>
+                                </constraints>
+                                <nil key="textColor"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="qHu-Ca-nCj">
+                                <rect key="frame" x="137.5" y="239" width="100" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="100" id="WBv-gB-0MS"/>
+                                </constraints>
+                                <nil key="textColor"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
+                            <constraint firstItem="vjD-5q-fde" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="E6J-5O-3bs"/>
                             <constraint firstItem="vfg-er-LgW" firstAttribute="top" secondItem="E7P-ay-9Qx" secondAttribute="bottom" constant="9" id="JGO-9U-WY1"/>
                             <constraint firstItem="E7P-ay-9Qx" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="20" id="Lhk-kD-cfH"/>
+                            <constraint firstItem="qHu-Ca-nCj" firstAttribute="top" secondItem="vjD-5q-fde" secondAttribute="bottom" constant="9" id="LnD-k9-URi"/>
                             <constraint firstItem="E7P-ay-9Qx" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="Tbm-G5-Do6"/>
+                            <constraint firstItem="qHu-Ca-nCj" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="Xkw-Oy-G9m"/>
                             <constraint firstItem="E7P-ay-9Qx" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="cAb-2A-H89"/>
                             <constraint firstItem="vfg-er-LgW" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="kV1-v9-6kd"/>
+                            <constraint firstItem="vjD-5q-fde" firstAttribute="top" secondItem="U0t-0v-gw0" secondAttribute="bottom" constant="61" id="orX-qv-Tus"/>
                             <constraint firstItem="U0t-0v-gw0" firstAttribute="top" secondItem="vfg-er-LgW" secondAttribute="bottom" constant="9" id="vIR-Zc-9iv"/>
                             <constraint firstItem="U0t-0v-gw0" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="zSU-es-3Hd"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="Text1" destination="vjD-5q-fde" id="uZN-E1-dGr"/>
+                        <outlet property="text1" destination="vjD-5q-fde" id="bKE-7c-2zF"/>
+                        <outlet property="text2" destination="qHu-Ca-nCj" id="caH-7v-Itb"/>
                         <outlet property="theLabel" destination="E7P-ay-9Qx" id="EGY-RF-tOb"/>
                     </connections>
                 </viewController>
