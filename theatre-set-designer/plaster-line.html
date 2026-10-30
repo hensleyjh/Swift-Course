@@ -747,14 +747,52 @@ function planSVG(c,inter){let o=baseDefs(c)+stagePlan(c,'floor')+stagePlan(c,'wa
   if(P.settings.dims)o+=stagePlan(c,'dims');
   if(inter)o+=planSel(c);
   return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
-/* An angled piece shows two faces side by side: its front (or back) at width w·|cos|, and one side at width d·|sin|, the way a turned box looks from the house. */
-function elevDraw(p,c,W,f){const t=TYPES[p.type],v=t.views;if(!v||!v.side)return t.elev(p,c,W,f);
-  const a=rad(p.rot),sn=Math.sin(a),cs=Math.cos(a),Wf=Math.abs(cs)*p.w,Ws=Math.abs(sn)*p.d;
-  const face=w=>cs<0&&v.back?v.back(p,c,w,w/Math.max(0.01,p.w)):t.elev(p,c,w,w/Math.max(0.01,p.w));
-  const side=w=>v.side(p,c,w,-sn>0?1:-1);
-  if(Ws<0.1*W)return face(W);if(Wf<0.1*W)return side(W);
-  const ss=Math.sign(sn*cs);
-  return `<g transform="translate(${n(-ss*Ws/2)} 0)">${face(Wf)}</g><g transform="translate(${n(ss*Wf/2)} 0)" filter="url(#${c.pid}-shade)">${side(Ws)}</g>`;}
+/* Angled pieces are drawn as one solid: a simple 3D model made of boxes, seen from the house with a slight look-down so seats and tabletops read. */
+const B=(x0,x1,y0,y1,z0,z1,col,sh=0)=>({x0,x1,y0,y1,z0,z1,col,sh});
+const WOOD='#3d2c20';
+function legs4(w,d,lh,t=0.15,inset=0.05){const a=w/2-inset,b=d/2-inset;return[B(-a,-a+t,-b,-b+t,0,lh,WOOD),B(a-t,a,-b,-b+t,0,lh,WOOD),B(-a,-a+t,b-t,b,0,lh,WOOD),B(a-t,a,b-t,b,0,lh,WOOD)];}
+const MODELS={
+  sofa(p){const{w,d,h}=p,aw=Math.min(0.9,w*0.14),bd=Math.min(0.9,d*0.28),lh=Math.min(0.4,h*0.12),st=h*0.45,at=h*0.68;
+    return[...legs4(w,d,lh),B(-w/2+aw,w/2-aw,-d/2+bd,d/2,lh,st*0.72,null,-0.05),B(-w/2+aw,w/2-aw,-d/2+bd,d/2-0.05,st*0.72,st,null,0.06),
+      B(-w/2+aw,w/2-aw,-d/2,-d/2+bd,lh,h,null,-0.1),B(-w/2,-w/2+aw,-d/2,d/2,lh,at,null,-0.04),B(w/2-aw,w/2,-d/2,d/2,lh,at,null,-0.04)];},
+  chair(p){const{w,d,h}=p;return[...legs4(w,d,h*0.47,0.12,0.06),B(-w/2,w/2,-d/2,d/2,h*0.47,h*0.53,null),B(-w/2+0.04,w/2-0.04,-d/2,-d/2+0.15,h*0.53,h,null,-0.08)];},
+  throne(p){const{w,d,h}=p,aw=w*0.13;return[B(-w/2,w/2,-d/2,d/2,0,0.3*h,null,-0.2),B(-w/2+aw,w/2-aw,-d/2+0.35,d/2,0.3*h,0.36*h,'#7a1d2a'),
+      B(-w/2+aw,w/2-aw,-d/2,-d/2+0.35,0.3*h,h,null,-0.05),B(-w/2,-w/2+aw,-d/2,d/2,0.3*h,0.52*h,null),B(w/2-aw,w/2,-d/2,d/2,0.3*h,0.52*h,null)];},
+  bed(p){const{w,d,h}=p;return[...legs4(w,d,0.3,0.25,0),B(-w/2,w/2,-d/2,-d/2+0.3,0.3,h,'#6e5038'),B(-w/2,w/2,-d/2+0.3,d/2,0.3,1.15,'#5a4130'),
+      B(-w/2,w/2,-d/2+0.3,d/2,1.15,2.05,null),B(-w/2+0.3,w/2-0.3,-d/2+0.45,-d/2+1.4,2.05,2.4,'#f4f1ea')];},
+  piano(p){const{w,d,h}=p,kd=Math.min(0.6,d*0.3);return[B(-w/2,w/2,-d/2,d/2-kd,0,0.2,null,0.1),B(-w/2,w/2,-d/2,d/2-kd,0.2,h,null),
+      B(-w*0.44,w*0.44,d/2-kd,d/2,2.3,2.55,'#f5f1e8'),B(-w*0.44,-w*0.44+0.15,d/2-0.15,d/2,0,2.3,null),B(w*0.44-0.15,w*0.44,d/2-0.15,d/2,0,2.3,null)];},
+  desk(p){const{w,d,h}=p,pw=w*0.36;return[B(-w/2+0.05,-w/2+0.2,-d/2+0.05,-d/2+0.2,0,h-0.15,null,-0.15),B(-w/2+0.05,-w/2+0.2,d/2-0.2,d/2-0.05,0,h-0.15,null,-0.15),
+      B(w/2-pw,w/2-0.05,-d/2+0.05,d/2-0.05,0,h-0.15,null,-0.05),B(-w/2,w/2,-d/2,d/2,h-0.15,h,null,0.05)];},
+  bench(p){const{w,d,h}=p;return[B(-w/2+0.25,-w/2+0.45,-d/2+0.1,d/2-0.1,0,h-0.18,null,-0.15),B(w/2-0.45,w/2-0.25,-d/2+0.1,d/2-0.1,0,h-0.18,null,-0.15),B(-w/2,w/2,-d/2,d/2,h-0.18,h,null)];},
+  table(p){const{w,d,h}=p;return[...legs4(w,d,h-0.14,Math.min(0.22,w*0.08),0.1).map(b=>Object.assign(b,{col:null,sh:-0.15})),B(-w/2,w/2,-d/2,d/2,h-0.14,h,null,0.05)];},
+  dresser(p){const{w,d,h}=p;return[...legs4(w,d,0.28,0.2,0.1),B(-w/2+0.08,w/2-0.08,-d/2+0.08,d/2-0.08,0.28,h-0.14,null),B(-w/2,w/2,-d/2,d/2,h-0.14,h,null,-0.12)];},
+  bookshelf(p){const{w,d,h}=p;return[B(-w/2,w/2,-d/2,d/2,0,h,null,-0.05)];},
+  counter(p){const{w,d,h}=p;return[B(-w/2+0.15,w/2-0.15,-d/2,d/2-0.15,0,h-0.18,null),B(-w/2,w/2,-d/2,d/2,h-0.18,h,null,-0.2)];},
+  fireplace(p){const{w,d,h}=p;return[B(-w*0.45,w*0.45,-d/2,d/2-0.1,0,h-0.3,null),B(-w/2,w/2,-d/2,d/2,h-0.3,h,'#6e5038')];},
+  crate(p){return[B(-p.w/2,p.w/2,-p.d/2,p.d/2,0,p.h,null)];},
+  box(p){return p.shape==='round'?null:[B(-p.w/2,p.w/2,-p.d/2,p.d/2,0,p.h,null)];},
+};
+MODELS.armchair=MODELS.sofa;
+const LOOK=0.22; // how much of a top surface shows, per foot of depth
+function drawModel(p,c,boxes){const a=rad(p.rot),cs=Math.cos(a),sn=Math.sin(a),Yof=(x,y)=>x*sn+y*cs;let yMax=-1e9;
+  for(const b of boxes)for(const x of[b.x0,b.x1])for(const y of[b.y0,b.y1])yMax=Math.max(yMax,Yof(x,y));
+  const pr=(x,y,z)=>[x*cs-y*sn,-z-LOOK*(yMax-Yof(x,y))];
+  const ov=(a,b)=>a.x0<b.x1-1e-6&&b.x0<a.x1-1e-6&&a.y0<b.y1-1e-6&&b.y0<a.y1-1e-6;
+  const cy=b=>Yof((b.x0+b.x1)/2,(b.y0+b.y1)/2);
+  const list=boxes.slice().sort((a,b)=>ov(a,b)?a.z0-b.z0:cy(a)-cy(b));
+  const sw=n(c.lw(LW.l));let o='';
+  const face=(pts,base,amt)=>{const fill=c.style==='color'?shade(base,amt):c.pal.paper;return Pa(poly(pts.map(q=>pr(...q))),`fill="${fill}" stroke="${c.pal.ink}" stroke-width="${sw}" stroke-linejoin="round"`);};
+  for(const b of list){const base=shade(b.col||p.color,b.sh||0);const{x0,x1,y0,y1,z0,z1}=b;
+    const faces=[[[x1,y0],[x1,y1],cs,sn],[[x0,y1],[x0,y0],-cs,-sn],[[x0,y1],[x1,y1],-sn,cs],[[x1,y0],[x0,y0],sn,-cs]];
+    for(const[[ax,ay],[bx,by],nx,ny]of faces){if(ny<=1e-6)continue;o+=face([[ax,ay,z0],[bx,by,z0],[bx,by,z1],[ax,ay,z1]],base,-0.3*Math.abs(nx));}
+    o+=face([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],base,0.14);}
+  return o;}
+function elevDraw(p,c,W,f){const t=TYPES[p.type],m=MODELS[p.type];const r=((p.rot%90)+90)%90;
+  if(m&&r>2&&r<88){const boxes=m(p);if(boxes)return drawModel(p,c,boxes);}
+  const v=t.views;if(v){const a=rad(p.rot),fx=-Math.sin(a),fy=Math.cos(a);
+    if(Math.abs(fx)>Math.abs(fy)&&v.side)return v.side(p,c,W,fx>0?1:-1);if(fy<0&&v.back)return v.back(p,c,W,f);}
+  return t.elev(p,c,W,f);}
 function elevSVG(c,inter){let o=baseDefs(c)+stageElev(c,'back');const items=P.pieces.filter(p=>TYPES[p.type].elev).sort((a,b)=>b.y-a.y);
   const one=p=>{const W=projW(p),f=W/Math.max(0.01,p.w);let g=`<g transform="translate(${n(p.x)} ${n(-p.z)})"${inter?` data-id="${p.id}" data-v="elev" data-h="move" class="pc"`:''}>${elevDraw(p,c,W,f)}`;
     if(inter){const hw=Math.max(W,c.ftPerPx*16)/2,hh=Math.max(p.h,c.ftPerPx*16);g+=R(-hw,-hh,2*hw,hh,'fill="transparent" stroke="none"');}return g+'</g>';};
