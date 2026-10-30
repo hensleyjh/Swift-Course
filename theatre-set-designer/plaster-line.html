@@ -512,6 +512,32 @@ note:{cat:'Annotations',label:'Text note',w:1,d:1,h:0,color:'#1c2028',layer:6,th
   plan(p,c){return T(c,0,0,(p.name||'').toUpperCase(),p.size||12,{ls:.06,w:700,fill:c.style==='color'?p.color:c.pal.ink});},
   elev:null}
 };
+/* Side and back views: a rotated piece shows the face that points at the audience. In side(), u runs -0.5 (back of piece) to +0.5 (front). */
+const RR=(W,dir,u0,u1,y,h,a)=>{const x0=dir*u0*W,x1=dir*u1*W;return R(Math.min(x0,x1),y,Math.abs(x1-x0),h,a);};
+const boxBack=(p,c,W)=>R(-W/2,-p.h,W,p.h,S(c,F(c,p,-0.08)));
+const boxSide=(p,c,W)=>R(-W/2,-p.h,W,p.h,S(c,F(c,p,-0.15)))+Ln(-W/2,-p.h+0.15,W/2,-p.h+0.15,SL(c,'x'));
+const legPair=(c,W,lh,col)=>R(-W/2+0.1,-lh,0.18,lh,S(c,col,'l'))+R(W/2-0.28,-lh,0.18,lh,S(c,col,'l'));
+TYPES.sofa.views={
+  side(p,c,W,d){const h=p.h,lh=Math.min(0.4,h*0.12),st=h*0.45,at=h*0.68,r=(a,b,y,hh,f,x='')=>RR(W,d,a,b,y,hh,S(c,f,'m',x));
+    return r(-0.5,-0.22,-h,h-lh,F(c,p,-0.12),'rx="0.2"')+r(-0.5,0.5,-st,st-lh,F(c,p))+r(-0.4,0.5,-at,at-lh,F(c,p,-0.05),'rx="0.15"')
+      +RR(W,d,-0.47,-0.4,-lh,lh,S(c,Fc(c,'#3d2c20'),'l'))+RR(W,d,0.4,0.47,-lh,lh,S(c,Fc(c,'#3d2c20'),'l'));},
+  back(p,c,W){const h=p.h,lh=Math.min(0.4,h*0.12);return R(-W/2,-h,W,h-lh,S(c,F(c,p,-0.12),'m','rx="0.2"'))+legPair(c,W,lh,Fc(c,'#3d2c20'));}};
+TYPES.chair.views={side(p,c,W,d){const h=p.h,f=F(c,p,-0.15);return RR(W,d,-0.5,-0.38,-h*0.48,h*0.48,S(c,f,'l'))+RR(W,d,0.38,0.5,-h*0.48,h*0.48,S(c,f,'l'))
+  +RR(W,d,-0.5,-0.36,-h,h*0.5,S(c,F(c,p,-0.1),'l'))+RR(W,d,-0.5,0.5,-h*0.5,0.16,S(c,F(c,p)));}};
+TYPES.throne.views={side(p,c,W,d){const h=p.h;return RR(W,d,-0.5,-0.32,-h,h,S(c,F(c,p,-0.1)))+RR(W,d,-0.5,0.5,-0.3*h,0.3*h,S(c,F(c,p,-0.22)))
+  +RR(W,d,-0.32,0.5,-0.36*h,0.08*h,S(c,Fc(c,'#7a1d2a')))+RR(W,d,-0.32,0.5,-0.52*h,0.08*h,S(c,F(c,p)))+RR(W,d,0.4,0.5,-0.46*h,0.1*h,S(c,F(c,p)));},
+  back(p,c,W){const h=p.h;return Pa(poly([[-0.42*W,-0.3*h],[-0.42*W,-0.86*h],[-0.3*W,-0.93*h],[-0.15*W,-0.87*h],[0,-h],[0.15*W,-0.87*h],[0.3*W,-0.93*h],[0.42*W,-0.86*h],[0.42*W,-0.3*h]]),S(c,F(c,p,-0.1)))
+    +R(-0.42*W,-0.3*h,0.84*W,0.3*h,S(c,F(c,p,-0.22)))+R(-0.5*W,-0.52*h,0.08*W,0.42*h,S(c,F(c,p)))+R(0.42*W,-0.52*h,0.08*W,0.42*h,S(c,F(c,p)));}};
+TYPES.bed.views={side(p,c,W,d){const h=p.h,wd=Fc(c,'#6e5038');return RR(W,d,-0.5,-0.46,-h,h,S(c,wd))+El(d*-0.36*W,-2.25,Math.min(0.75,W*0.12),0.3,S(c,Fc(c,'#f4f1ea'),'l'))
+  +RR(W,d,-0.46,0.5,-2.1,1,S(c,F(c,p,-0.1),'m','rx="0.15"'))+RR(W,d,-0.46,0.5,-1.15,0.85,S(c,Fc(c,'#5a4130')))+RR(W,d,-0.46,-0.42,-0.3,0.3,S(c,Fc(c,'#3d2c20'),'l'))+RR(W,d,0.46,0.5,-0.3,0.3,S(c,Fc(c,'#3d2c20'),'l'));},
+  back(p,c,W){return R(-W/2,-p.h,W,p.h,S(c,Fc(c,'#6e5038')))+R(-W/2+0.15,-p.h+0.3,W-0.3,p.h-0.7,SL(c,'l'));}};
+TYPES.piano.views={side(p,c,W,d){const h=p.h;return RR(W,d,-0.5,0.15,-h,h-0.2,S(c,F(c,p)))+RR(W,d,0.15,0.5,-2.55,0.32,S(c,F(c,p,0.1)))+RR(W,d,0.15,0.5,-2.23,0.12,S(c,F(c,p,0.1),'l'))
+  +RR(W,d,0.4,0.5,-2.11,2.11,S(c,F(c,p),'l'))+RR(W,d,-0.5,0.15,-0.2,0.2,S(c,F(c,p,0.1),'l'));},
+  back(p,c,W){const h=p.h;let o=R(-W/2,-h,W,h,S(c,F(c,p)));for(const k of[-0.25,0,0.25])o+=Ln(W*k,-h+0.3,W*k,-0.3,SL(c,'l','',c.style==='color'?shade(p.color,0.25):undefined));return o;}};
+TYPES.desk.views={side(p,c,W,d){const h=p.h;return RR(W,d,-0.48,0.48,-h+0.15,h-0.15,S(c,F(c,p,-0.08)))+RR(W,d,-0.5,0.5,-h,0.15,S(c,F(c,p)));},
+  back(p,c,W){const h=p.h;return R(-W/2+0.08,-h+0.15,W-0.16,h-0.15,S(c,F(c,p,-0.12)))+R(-W/2,-h,W,0.15,S(c,F(c,p)));}};
+TYPES.bench.views={side(p,c,W,d){const h=p.h;return R(-W*0.4,-h+0.18,W*0.8,h-0.18,S(c,F(c,p,-0.15)))+R(-W/2,-h,W,0.18,S(c,F(c,p)));}};
+for(const k of['dresser','bookshelf','counter','fireplace'])TYPES[k].views={side:boxSide,back:boxBack};
 TYPES.armchair=Object.assign({},TYPES.sofa,{label:'Armchair',w:3,d:3,h:3.2,color:'#8a5a44'});
 const CATS=[...new Set(Object.values(TYPES).map(t=>t.cat))];
 const ORDER=Object.keys(TYPES).sort((a,b)=>CATS.indexOf(TYPES[a].cat)-CATS.indexOf(TYPES[b].cat));
@@ -720,8 +746,11 @@ function planSVG(c,inter){let o=baseDefs(c)+stagePlan(c,'floor')+stagePlan(c,'wa
   if(P.settings.dims)o+=stagePlan(c,'dims');
   if(inter)o+=planSel(c);
   return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
+function elevDraw(p,c,W,f){const t=TYPES[p.type],v=t.views;if(v){const a=rad(p.rot),fx=-Math.sin(a),fy=Math.cos(a);
+    if(Math.abs(fx)>Math.abs(fy)+0.01&&v.side)return v.side(p,c,W,fx>0?1:-1);if(fy<-0.01&&Math.abs(fy)>=Math.abs(fx)&&v.back)return v.back(p,c,W,f);}
+  return t.elev(p,c,W,f);}
 function elevSVG(c,inter){let o=baseDefs(c)+stageElev(c,'back');const items=P.pieces.filter(p=>TYPES[p.type].elev).sort((a,b)=>b.y-a.y);
-  const one=p=>{const W=projW(p),f=W/Math.max(0.01,p.w);let g=`<g transform="translate(${n(p.x)} ${n(-p.z)})"${inter?` data-id="${p.id}" data-v="elev" data-h="move" class="pc"`:''}>${TYPES[p.type].elev(p,c,W,f)}`;
+  const one=p=>{const W=projW(p),f=W/Math.max(0.01,p.w);let g=`<g transform="translate(${n(p.x)} ${n(-p.z)})"${inter?` data-id="${p.id}" data-v="elev" data-h="move" class="pc"`:''}>${elevDraw(p,c,W,f)}`;
     if(inter){const hw=Math.max(W,c.ftPerPx*16)/2,hh=Math.max(p.h,c.ftPerPx*16);g+=R(-hw,-hh,2*hw,hh,'fill="transparent" stroke="none"');}return g+'</g>';};
   const pros=isPros();for(const p of items)if(!pros||p.y>=0)o+=one(p);o+=stageElev(c,'arch');for(const p of items)if(pros&&p.y<0)o+=one(p);
   o+=stageElev(c,'front');if(P.settings.labels)o+=elevLabels(c);if(inter)o+=elevSel(c);return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
