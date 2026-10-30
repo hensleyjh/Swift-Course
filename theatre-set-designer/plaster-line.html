@@ -302,6 +302,7 @@ function baseDefs(c){const t=c.pal.tex,sw=n(c.lw(0.4)),L=`stroke="${t}" stroke-w
 <pattern id="${id('paneling')}" patternUnits="userSpaceOnUse" width="2" height="3.5"><rect x="0.22" y="0.25" width="1.56" height="3" ${L}/></pattern>
 <pattern id="${id('tile')}" patternUnits="userSpaceOnUse" width="1" height="1"><path d="M0 0.001H1M0.001 0V1" ${L}/></pattern>
 <pattern id="${id('poche')}" patternUnits="userSpaceOnUse" width="0.7" height="0.7" patternTransform="rotate(45)"><path d="M0.001 0V0.7" stroke="${c.pal.ink}" stroke-width="${n(c.lw(0.45))}" opacity="0.6"/></pattern>
+<filter id="${id('shade')}" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="linear" slope="${c.style==='color'?0.8:1}"/><feFuncG type="linear" slope="${c.style==='color'?0.8:1}"/><feFuncB type="linear" slope="${c.style==='color'?0.8:1}"/></feComponentTransfer></filter>
 <pattern id="${id('scrim')}" patternUnits="userSpaceOnUse" width="0.5" height="0.5"><path d="M0 0.001H0.5M0.001 0V0.5" ${L} opacity="0.5"/></pattern>
 </defs>`;}
 function poche(c,x,y,w,h){if(c.style==='color')return R(x,y,w,h,`fill="${c.pal.wall}" stroke="${c.pal.ink}" stroke-width="${n(c.lw(LW.m))}"`);
@@ -746,9 +747,14 @@ function planSVG(c,inter){let o=baseDefs(c)+stagePlan(c,'floor')+stagePlan(c,'wa
   if(P.settings.dims)o+=stagePlan(c,'dims');
   if(inter)o+=planSel(c);
   return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
-function elevDraw(p,c,W,f){const t=TYPES[p.type],v=t.views;if(v){const a=rad(p.rot),fx=-Math.sin(a),fy=Math.cos(a);
-    if(Math.abs(fx)>Math.abs(fy)+0.01&&v.side)return v.side(p,c,W,fx>0?1:-1);if(fy<-0.01&&Math.abs(fy)>=Math.abs(fx)&&v.back)return v.back(p,c,W,f);}
-  return t.elev(p,c,W,f);}
+/* An angled piece shows two faces side by side: its front (or back) at width w·|cos|, and one side at width d·|sin|, the way a turned box looks from the house. */
+function elevDraw(p,c,W,f){const t=TYPES[p.type],v=t.views;if(!v||!v.side)return t.elev(p,c,W,f);
+  const a=rad(p.rot),sn=Math.sin(a),cs=Math.cos(a),Wf=Math.abs(cs)*p.w,Ws=Math.abs(sn)*p.d;
+  const face=w=>cs<0&&v.back?v.back(p,c,w,w/Math.max(0.01,p.w)):t.elev(p,c,w,w/Math.max(0.01,p.w));
+  const side=w=>v.side(p,c,w,-sn>0?1:-1);
+  if(Ws<0.1*W)return face(W);if(Wf<0.1*W)return side(W);
+  const ss=Math.sign(sn*cs);
+  return `<g transform="translate(${n(-ss*Ws/2)} 0)">${face(Wf)}</g><g transform="translate(${n(ss*Wf/2)} 0)" filter="url(#${c.pid}-shade)">${side(Ws)}</g>`;}
 function elevSVG(c,inter){let o=baseDefs(c)+stageElev(c,'back');const items=P.pieces.filter(p=>TYPES[p.type].elev).sort((a,b)=>b.y-a.y);
   const one=p=>{const W=projW(p),f=W/Math.max(0.01,p.w);let g=`<g transform="translate(${n(p.x)} ${n(-p.z)})"${inter?` data-id="${p.id}" data-v="elev" data-h="move" class="pc"`:''}>${elevDraw(p,c,W,f)}`;
     if(inter){const hw=Math.max(W,c.ftPerPx*16)/2,hh=Math.max(p.h,c.ftPerPx*16);g+=R(-hw,-hh,2*hw,hh,'fill="transparent" stroke="none"');}return g+'</g>';};
