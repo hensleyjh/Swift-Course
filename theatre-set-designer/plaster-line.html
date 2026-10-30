@@ -547,7 +547,7 @@ const ORDER=Object.keys(TYPES).sort((a,b)=>CATS.indexOf(TYPES[a].cat)-CATS.index
 function defaultStage(type='proscenium'){return{type,prosW:34,prosH:18,depth:28,apron:6,apronShape:'curved',wing:12,stageH:3,thrustW:24,thrustD:14,backW:44,bbW:40,bbD:30,seating:'three',gridH:16,audience:true};}
 function today(){const d=new Date();return d.toISOString().slice(0,10);}
 function blankProject(type){return{v:1,meta:{title:'Untitled Production',playwright:'',designer:'',course:'',instructor:'',venue:'',scene:'',date:today(),notes:''},
-  stage:defaultStage(type),settings:{style:'color',grid:true,gridSize:1,snap:0.5,useSnap:true,labels:true,dims:true,elevPros:true,paper:'tabloid'},
+  stage:defaultStage(type),settings:{style:'color',grid:true,gridSize:1,snap:0.5,useSnap:true,labels:true,dims:true,elevPros:true,paper:'tabloid',lookDeg:4},
   box:{back:16,side:12,splay:30,y:18,h:14,backType:'flat',srType:'doorflat',slType:'windowflat',color:'#c9b89c',texture:'none'},pieces:[]};}
 function mk(type,o={}){const t=TYPES[type];return Object.assign({id:uid(),type,name:t.label,x:0,y:10,w:t.w,d:t.d,h:t.h,z:t.z||0,rot:0,color:t.color,texture:t.texture||'none',
   shape:t.shape||'rect',flown:!!t.flown,showLabel:t.showLabel!==false,ow:t.ow||3,ox:0,swing:'L',swingDir:'down',open:t.open??0.9,size:12},o);}
@@ -774,8 +774,7 @@ const MODELS={
   box(p){return p.shape==='round'?null:[B(-p.w/2,p.w/2,-p.d/2,p.d/2,0,p.h,null)];},
 };
 MODELS.armchair=MODELS.sofa;
-const LOOK=0.22; // how much of a top surface shows, per foot of depth
-function drawModel(p,c,boxes){const a=rad(p.rot),cs=Math.cos(a),sn=Math.sin(a),Yof=(x,y)=>x*sn+y*cs;let yMax=-1e9;
+function drawModel(p,c,boxes){const a=rad(p.rot),cs=Math.cos(a),sn=Math.sin(a),Yof=(x,y)=>x*sn+y*cs,LOOK=Math.sin(rad(P.settings.lookDeg??4));let yMax=-1e9;
   for(const b of boxes)for(const x of[b.x0,b.x1])for(const y of[b.y0,b.y1])yMax=Math.max(yMax,Yof(x,y));
   const pr=(x,y,z)=>[x*cs-y*sn,-z-LOOK*(yMax-Yof(x,y))];
   const ov=(a,b)=>a.x0<b.x1-1e-6&&b.x0<a.x1-1e-6&&a.y0<b.y1-1e-6&&b.y0<a.y1-1e-6;
@@ -1009,12 +1008,14 @@ function buildSheet(){const m=P.meta,st=P.settings;const tf=(l,k,ph='')=>`<div c
   <label class="chk"><input type="checkbox" data-set="labels"${st.labels?' checked':''}> Piece name labels (both views)</label>
   <label class="chk"><input type="checkbox" data-set="dims"${st.dims?' checked':''}> Stage dimensions</label>
   <label class="chk"><input type="checkbox" data-set="elevPros"${st.elevPros?' checked':''}> Proscenium wall in the elevation</label>
+  <div class="fld"><label for="f-look">Angled furniture view (°)</label><input type="number" id="f-look" data-set="lookDeg" min="0" max="25" step="1" value="${st.lookDeg??4}"></div>
+  <p class="hint" style="margin-top:-4px">How far the audience looks down on turned furniture in the elevation. 0° is eye level; 3° to 6° looks natural.</p>
   <div class="fld"><label for="f-gs">Grid spacing</label><select id="f-gs" data-set="gridSize"><option value="1"${st.gridSize==1?' selected':''}>1 foot</option><option value="2"${st.gridSize==2?' selected':''}>2 feet</option><option value="0.5"${st.gridSize==0.5?' selected':''}>6 inches</option></select></div>
   <div class="fld"><label for="f-sn">Snap step</label><select id="f-sn" data-set="snap"><option value="0.25"${st.snap==0.25?' selected':''}>3 inches</option><option value="0.5"${st.snap==0.5?' selected':''}>6 inches</option><option value="1"${st.snap==1?' selected':''}>1 foot</option></select></div>
   </div>`;$('#pt-sheet').innerHTML=h;}
 $('#pt-sheet').addEventListener('focusin',e=>{if(e.target.dataset.m)checkpoint();});
 $('#pt-sheet').addEventListener('input',e=>{const el=e.target;if(el.dataset.m){P.meta[el.dataset.m]=el.value;}else if(el.dataset.set){const k=el.dataset.set;checkpoint();
-    P.settings[k]=el.type==='checkbox'?el.checked:(['gridSize','snap'].includes(k)?parseFloat(el.value):el.value);}else return;renderCanvas();syncTop();save();});
+    P.settings[k]=el.type==='checkbox'?el.checked:(['gridSize','snap'].includes(k)?parseFloat(el.value):k==='lookDeg'?clamp(parseFloat(el.value)||0,0,25):el.value);}else return;renderCanvas();syncTop();save();});
 $$('.left .ptabs button').forEach(b=>b.onclick=()=>{leftTab=b.dataset.pt;$$('.left .ptabs button').forEach(x=>x.setAttribute('aria-selected',x===b));['add','stage','sheet'].forEach(k=>$('#pt-'+k).hidden=k!==leftTab);});
 
 /* ================= inspector ================= */
