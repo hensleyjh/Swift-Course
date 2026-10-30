@@ -162,6 +162,7 @@ kbd{font-family:var(--f-label);font-size:12px;border:1px solid var(--line);borde
         <button data-style="blueprint">Blueprint</button>
       </div>
       <span class="spacer"></span>
+      <label class="chk"><input type="checkbox" id="labelChk"> Labels</label>
       <label class="chk"><input type="checkbox" id="snapChk"> Snap</label>
       <label class="chk"><input type="checkbox" id="gridChk"> Grid</label>
       <button class="btn sm" id="zoomOut" title="Zoom out">−</button>
@@ -396,7 +397,7 @@ backdrop:{cat:'Drops & drapes',label:'Backdrop',w:40,d:0.3,h:22,color:'#6f93c8',
       c.defs.push(`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`);fill=`url(#${id})`;}}
     o+=R(-W/2,-h,W,h,S(c,fill,'m'));
     if(c.style==='color'&&p.texture==='night'){const r=rng(hash(p.id));for(let i=0;i<Math.round(W*h/14);i++)o+=Ci(-W/2+r()*W,-h+r()*h*0.75,0.04+r()*0.07,'fill="#fff" opacity="0.85"');}
-    if(c.style!=='color')o+=T(c,0,-h*0.55,(p.name||'').toUpperCase(),8,{fill:c.pal.soft,ls:.12,halo:false});return o;}},
+    return o;}},
 scrim:{cat:'Drops & drapes',label:'Scrim',w:40,d:0.2,h:22,color:'#3a3d48',flown:true,layer:5,
   plan(p,c){return R(-p.w/2,-p.d/2,p.w,p.d,S(c,'none','l'))+Ln(-p.w/2,0,p.w/2,0,SL(c,'x'));},
   elev(p,c,W){const h=p.h;return R(-W/2,-h,W,h,c.style==='color'?`fill="${p.color}" fill-opacity="0.32" stroke="${c.pal.ink}" stroke-width="${n(c.lw(LW.l))}"`:SL(c,'l'))+R(-W/2,-h,W,h,`fill="url(#${c.pid}-scrim)" stroke="none" opacity="0.6"`);}},
@@ -713,9 +714,9 @@ function planSVG(c,inter){let o=baseDefs(c)+stagePlan(c,'floor')+stagePlan(c,'wa
     if(inter){let hw,hd;if(p.type==='note'){const fs=c.fs(p.size||12);hw=Math.max(1,(p.name||'').length*fs*0.32);hd=fs*0.7;}else{hw=Math.max(p.w,c.ftPerPx*16)/2;hd=Math.max(p.d,c.ftPerPx*16)/2;}
       o+=R(-hw,-hd,2*hw,2*hd,'fill="transparent" stroke="none"');}o+='</g>';}
   o+=stagePlan(c,'lines');
-  if(P.settings.labels)for(const p of P.pieces){if(!p.showLabel||p.type==='note')continue;const t=TYPES[p.type];const lines=[(p.name||t.label).toUpperCase()];
+  if(P.settings.labels){const items=[];for(const p of P.pieces){if(!p.showLabel||p.type==='note')continue;const t=TYPES[p.type];const lines=[(p.name||t.label).toUpperCase()];
     if(['platform','stairs','ramp'].includes(p.type))lines.push('+'+fmt(p.z+p.h));else if(p.flown&&p.z>0)lines.push('TRIM '+fmt(p.z));
-    const fs=c.fs(6.5);lines.forEach((ln,i)=>{o+=T(c,p.x,-p.y+(i-(lines.length-1)/2)*fs*1.25,ln,i?6:6.5,{w:i?500:600,ls:.04});});}
+    items.push({x:p.x,y:-p.y,lines,size:p.w*p.d});}o+=placeLabels(c,items);}
   if(P.settings.dims)o+=stagePlan(c,'dims');
   if(inter)o+=planSel(c);
   return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
@@ -723,7 +724,21 @@ function elevSVG(c,inter){let o=baseDefs(c)+stageElev(c,'back');const items=P.pi
   const one=p=>{const W=projW(p),f=W/Math.max(0.01,p.w);let g=`<g transform="translate(${n(p.x)} ${n(-p.z)})"${inter?` data-id="${p.id}" data-v="elev" data-h="move" class="pc"`:''}>${TYPES[p.type].elev(p,c,W,f)}`;
     if(inter){const hw=Math.max(W,c.ftPerPx*16)/2,hh=Math.max(p.h,c.ftPerPx*16);g+=R(-hw,-hh,2*hw,hh,'fill="transparent" stroke="none"');}return g+'</g>';};
   const pros=isPros();for(const p of items)if(!pros||p.y>=0)o+=one(p);o+=stageElev(c,'arch');for(const p of items)if(pros&&p.y<0)o+=one(p);
-  o+=stageElev(c,'front');if(inter)o+=elevSel(c);return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
+  o+=stageElev(c,'front');if(P.settings.labels)o+=elevLabels(c);if(inter)o+=elevSel(c);return o+(c.defs.length?`<defs>${c.defs.join('')}</defs>`:'');}
+function placeLabels(c,items){const fs=c.fs(6.5),lh=fs*1.25,placed=[];let o='';
+  items.sort((a,b)=>a.size-b.size);
+  for(const it of items){const w=Math.max(...it.lines.map(l=>l.length))*fs*0.6+fs*0.5,h=it.lines.length*lh;let best=it.y;
+    for(const k of[0,1,-1,2,-2,3,-3,4,-4]){const y=it.y+k*lh*0.9,bx={x0:it.x-w/2,x1:it.x+w/2,y0:y-h/2,y1:y+h/2};
+      if(!placed.some(q=>q.x0<bx.x1&&bx.x0<q.x1&&q.y0<bx.y1&&bx.y0<q.y1)){best=y;break;}}
+    placed.push({x0:it.x-w/2,x1:it.x+w/2,y0:best-h/2,y1:best+h/2});
+    it.lines.forEach((ln,i)=>{o+=T(c,it.x,best+(i-(it.lines.length-1)/2)*lh,ln,i?6:6.5,{w:i?500:600,ls:.04});});}
+  return o;}
+function elevLabels(c){const s=P.stage,arch=isPros()&&P.settings.elevPros,top=arch?s.prosH:Infinity,half=arch?s.prosW/2:Infinity;const items=[];
+  for(const p of P.pieces){const t=TYPES[p.type];if(!t.elev||!p.showLabel||p.type==='rug')continue;const W=projW(p),behind=!isPros()||p.y>=0;
+    if(behind&&(p.x+W/2<-half||p.x-W/2>half))continue;const lo=p.z,hi=behind?Math.min(p.z+p.h,top):p.z+p.h;if(hi-lo<0.3)continue;
+    const y=t.layer===5?hi-1.2:p.type==='curtain'?hi-3.2:(lo+hi)/2;const x=behind&&isFinite(half)?clamp(p.x,-half+2,half-2):p.x;
+    items.push({x,y:-y,lines:[(p.name||t.label).toUpperCase()],size:W*p.h});}
+  return placeLabels(c,items);}
 function planSel(c){const p=selP();if(!p)return '';const k=c.ftPerPx,hs=k*10,pad=k*5,sc=c.pal.sel,t=TYPES[p.type];
   let w=p.w,d=p.d;if(p.type==='note'){const fs=c.fs(p.size||12);w=Math.max(2,(p.name||'').length*fs*0.64);d=fs*1.4;}
   let o=`<g transform="translate(${n(p.x)} ${n(-p.y)}) rotate(${n(p.rot)})">`+R(-w/2-pad,-d/2-pad,w+2*pad,d+2*pad,`fill="none" stroke="${sc}" stroke-width="${n(k*1.6)}" stroke-dasharray="${n(k*6)} ${n(k*4)}"`);
@@ -918,7 +933,7 @@ function buildSheet(){const m=P.meta,st=P.settings;const tf=(l,k,ph='')=>`<div c
   <div class="grp"><h3>Paper</h3><div class="fld wide"><select id="f-paper" data-set="paper">${Object.entries(PAPERS).map(([k,v])=>`<option value="${k}"${st.paper===k?' selected':''}>${v[2]}</option>`).join('')}</select></div>
   <p class="hint">The sheet picks the largest standard architectural scale that fits, so the drawing measures true when printed at this size.</p></div>
   <div class="grp"><h3>Display</h3>
-  <label class="chk"><input type="checkbox" data-set="labels"${st.labels?' checked':''}> Piece names on the ground plan</label>
+  <label class="chk"><input type="checkbox" data-set="labels"${st.labels?' checked':''}> Piece name labels (both views)</label>
   <label class="chk"><input type="checkbox" data-set="dims"${st.dims?' checked':''}> Stage dimensions</label>
   <label class="chk"><input type="checkbox" data-set="elevPros"${st.elevPros?' checked':''}> Proscenium wall in the elevation</label>
   <div class="fld"><label for="f-gs">Grid spacing</label><select id="f-gs" data-set="gridSize"><option value="1"${st.gridSize==1?' selected':''}>1 foot</option><option value="2"${st.gridSize==2?' selected':''}>2 feet</option><option value="0.5"${st.gridSize==0.5?' selected':''}>6 inches</option></select></div>
@@ -953,7 +968,7 @@ function renderInspector(){const p=selP(),el=$('#insp');
   if(pr.includes('opening')){h+=`<div class="grp"><h3>Opening</h3>${nf('Opening width','ow',0.25,0.5)}${nf('Offset from middle','ox',0.25)}`;
     if(pr.includes('door'))h+=`<div class="fld"><label for="i-swing">Hinge side</label><select id="i-swing" data-k="swing"><option value="L"${p.swing==='L'?' selected':''}>Left end</option><option value="R"${p.swing==='R'?' selected':''}>Right end</option></select></div>
       <div class="fld"><label for="i-sdir">Swings toward</label><select id="i-sdir" data-k="swingDir"><option value="down"${p.swingDir==='down'?' selected':''}>Front of flat</option><option value="up"${p.swingDir==='up'?' selected':''}>Back of flat</option></select></div><p class="hint">Stage doors usually swing offstage, away from the audience.</p>`;h+='</div>';}
-  h+=`<div class="grp"><label class="chk"><input type="checkbox" data-k="flown"${p.flown?' checked':''}> Hangs from above (dashed on plan)</label>${p.type!=='note'?`<label class="chk"><input type="checkbox" data-k="showLabel"${p.showLabel?' checked':''}> Show name on ground plan</label>`:''}</div>
+  h+=`<div class="grp"><label class="chk"><input type="checkbox" data-k="flown"${p.flown?' checked':''}> Hangs from above (dashed on plan)</label>${p.type!=='note'?`<label class="chk"><input type="checkbox" data-k="showLabel"${p.showLabel?' checked':''}> Show name label</label>`:''}</div>
     <div class="btnrow"><button class="btn sm" data-act="dup">Duplicate</button><button class="btn sm" data-act="mirror">Mirror across ℄</button><button class="btn sm danger" data-act="del">Delete</button></div>`;
   el.innerHTML=h;}
 function syncInspector(){const p=selP();if(!p)return;$$('#insp [data-k]').forEach(i=>{if(i===document.activeElement)return;const k=i.dataset.k;if(i.type==='checkbox')i.checked=!!p[k];else if(i.type==='number')i.value=n(p[k]);else i.value=p[k];});
@@ -977,11 +992,12 @@ $('#list').addEventListener('click',e=>{const b=e.target.closest('[data-sel]');i
 
 /* ================= top controls ================= */
 function syncTop(){$$('#viewTabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===view));$$('#styleSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.style===P.settings.style));
-  $('#snapChk').checked=!!P.settings.useSnap;$('#gridChk').checked=!!P.settings.grid;
+  $('#snapChk').checked=!!P.settings.useSnap;$('#labelChk').checked=!!P.settings.labels;$('#gridChk').checked=!!P.settings.grid;
   $('#hint').textContent=view==='plan'?'Drag pieces to move them. White squares resize, the round handle rotates. Drag empty paper to pan.':view==='elev'?'Drag a piece sideways or up (for example onto a platform). The top square changes its height.':'This is the sheet to hand in. You can still drag pieces here. Select Export image when it is ready.';}
 $('#viewTabs').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b)return;view=b.dataset.view;syncTop();renderCanvas();try{localStorage.setItem(KEY+'.view',view);}catch(_){}});
 $('#styleSeg').addEventListener('click',e=>{const b=e.target.closest('[data-style]');if(!b)return;P.settings.style=b.dataset.style;syncTop();renderCanvas();save();});
 $('#snapChk').onchange=e=>{P.settings.useSnap=e.target.checked;save();};
+$('#labelChk').onchange=e=>{checkpoint();P.settings.labels=e.target.checked;buildSheet();renderCanvas();save();};
 $('#gridChk').onchange=e=>{P.settings.grid=e.target.checked;renderCanvas();save();};
 $('#undoBtn').onclick=undo;$('#redoBtn').onclick=redo;
 $$('dialog [data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
