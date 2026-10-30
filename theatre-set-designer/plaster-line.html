@@ -20,6 +20,7 @@
   --accent:#7d9cff; --accent-soft:#25304a; --accent-ink:#0d1422; --spike:#ff5fae; --canvas:#0c0f13; --danger:#ff8a80; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -54,6 +55,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .pbody{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:14px;min-height:0;flex:1}
 h3{font-family:var(--f-label);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:700}
 .grp{display:flex;flex-direction:column;gap:8px}
+.box{border:1px solid var(--line);border-radius:6px;background:var(--raise);padding:8px 10px}
+.box summary{cursor:pointer;font-family:var(--f-label);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.box[open] summary{margin-bottom:8px}
 .pal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .pal button{border:1px solid var(--line);background:var(--raise);border-radius:6px;padding:6px 4px 5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
 .pal button:hover{border-color:var(--accent);background:var(--accent-soft)}
@@ -321,7 +325,9 @@ const risers=p=>Math.max(1,Math.round(p.h/(7/12)));
 function sideOn(p){return Math.abs(Math.sin(rad(p.rot)))>0.71;}
 function wallGap(c,p,gx,gw){const{w,d}=p,f=c.style==='color'?shade(p.color,-0.25):c.pal.ink;const a=-w/2,b=gx-gw/2,e=gx+gw/2,z=w/2;let o='';
   if(b>a)o+=R(a,-d/2,b-a,d,S(c,f,'m'));if(z>e)o+=R(e,-d/2,z-e,d,S(c,f,'m'));return o;}
-function wallElev(c,p,W){return R(-W/2,-p.h,W,p.h,S(c,F(c,p),'m'))+tex(c,p,-W/2,-p.h,W,p.h);}
+function wallElev(c,p,W,f=1){const t=tex(c,p,-W/2/f,-p.h,W/f,p.h);return R(-W/2,-p.h,W,p.h,S(c,F(c,p),'m'))+(t?`<g transform="scale(${n(f)} 1)">${t}</g>`:'');}
+function wallShade(c,p,W){const a=Math.abs(Math.sin(rad(p.rot)));if(a<0.05)return '';
+  return c.style==='color'?R(-W/2,-p.h,W,p.h,`fill="#000" opacity="${n(a*0.3)}" stroke="none"`):R(-W/2,-p.h,W,p.h,`fill="url(#${c.pid}-scrim)" stroke="none" opacity="${n(a*0.7)}"`);}
 function pleats(c,p,x0,x1,y0,y1,step){let o='';const col=c.style==='color'?shade(p.color,p.color&&parseInt(p.color.slice(1,3),16)<60?0.18:-0.3):c.pal.ink;
   for(let x=x0+step;x<x1-step*0.3;x+=step)o+=Ln(x,y0,x,y1,SL(c,'x','',col));return o;}
 function openingClamp(p){const ow=clamp(p.ow||3,0.5,Math.max(0.5,p.w-0.3));const ox=clamp(p.ox||0,-(p.w-ow)/2,(p.w-ow)/2);return{ow,ox};}
@@ -347,28 +353,28 @@ ramp:{cat:'Platforms & steps',label:'Ramp',w:4,d:8,h:2,color:'#a08466',layer:1,p
 /* ---------- Walls & openings ---------- */
 flat:{cat:'Walls & openings',label:'Wall flat',w:8,d:0.33,h:12,color:'#c9b89c',layer:2,props:['texture'],
   plan(p,c){return R(-p.w/2,-p.d/2,p.w,p.d,S(c,c.style==='color'?shade(p.color,-0.25):c.pal.ink,'m'));},
-  elev(p,c,W){return wallElev(c,p,W)+R(-W/2,-p.h,W,p.h,SL(c,'m'));}},
+  elev(p,c,W,f){return wallElev(c,p,W,f)+wallShade(c,p,W)+R(-W/2,-p.h,W,p.h,SL(c,'m'));}},
 doorflat:{cat:'Walls & openings',label:'Door flat',w:6,d:0.33,h:12,color:'#c9b89c',ow:3,layer:2,props:['texture','opening','door'],
   plan(p,c){const{ow,ox}=openingClamp(p),d=p.d;let o=wallGap(c,p,ox,ow);const hx=p.swing==='L'?ox-ow/2:ox+ow/2,jx=p.swing==='L'?ox+ow/2:ox-ow/2,dy=p.swingDir==='down'?1:-1,y0=dy*d/2;
     const sx=hx,sy=y0+dy*ow,cross=0*0-(dy*ow)*(jx-hx);o+=Ln(hx,y0,sx,sy,SL(c,'m'));o+=Pa(`M${n(sx)} ${n(sy)} A${n(ow)} ${n(ow)} 0 0 ${cross>0?1:0} ${n(jx)} ${n(y0)}`,SL(c,'x','stroke-dasharray="0.3 0.2"'));return o;},
-  elev(p,c,W,f){const h=p.h,{ow:o1,ox:x1}=openingClamp(p),ow=o1*f,ox=x1*f,dh=Math.min(7,h-0.6),cs=0.35*f;let o=wallElev(c,p,W);
+  elev(p,c,W,f){const h=p.h,{ow:o1,ox:x1}=openingClamp(p),ow=o1*f,ox=x1*f,dh=Math.min(7,h-0.6),cs=0.35*f;let o=wallElev(c,p,W,f);
     o+=R(ox-ow/2-cs,-dh-cs,ow+2*cs,dh+cs,S(c,c.style==='color'?shade(p.color,0.5):c.pal.paper,'l'));
     o+=R(ox-ow/2,-dh,ow,dh,S(c,Fc(c,'#7b5a3c'),'m'));const pi=0.38*f;
     o+=R(ox-ow/2+pi,-dh+0.45,ow-2*pi,dh*0.4,SL(c,'x'))+R(ox-ow/2+pi,-dh*0.5,ow-2*pi,dh*0.5-0.5,SL(c,'x'));
     const kx=p.swing==='L'?ox+ow/2-0.3*f:ox-ow/2+0.3*f;o+=Ci(kx,-3,0.13,`fill="${Fc(c,'#d8b34a')}" stroke="${c.pal.ink}" stroke-width="${n(c.lw(LW.x))}"`);
-    return o+R(-W/2,-h,W,h,SL(c,'m'));}},
+    return o+wallShade(c,p,W)+R(-W/2,-h,W,h,SL(c,'m'));}},
 windowflat:{cat:'Walls & openings',label:'Window flat',w:6,d:0.33,h:12,color:'#c9b89c',ow:3.5,layer:2,props:['texture','opening'],
   plan(p,c){const{ow,ox}=openingClamp(p),d=p.d;let o=wallGap(c,p,ox,ow);o+=R(ox-ow/2,-d/2,ow,d,S(c,c.pal.paper,'l'))+Ln(ox-ow/2,0,ox+ow/2,0,SL(c,'x'));return o;},
-  elev(p,c,W,f){const h=p.h,{ow:o1,ox:x1}=openingClamp(p),ow=o1*f,ox=x1*f,sill=Math.min(3,h*0.28),wh=Math.max(1,Math.min(4.5,h-sill-1.2)),cs=0.35*f;let o=wallElev(c,p,W);
+  elev(p,c,W,f){const h=p.h,{ow:o1,ox:x1}=openingClamp(p),ow=o1*f,ox=x1*f,sill=Math.min(3,h*0.28),wh=Math.max(1,Math.min(4.5,h-sill-1.2)),cs=0.35*f;let o=wallElev(c,p,W,f);
     const lite=c.style==='color'?shade(p.color,0.5):c.pal.paper;
     o+=R(ox-ow/2-cs,-sill-wh-cs,ow+2*cs,wh+2*cs,S(c,lite,'l'));o+=R(ox-ow/2,-sill-wh,ow,wh,S(c,c.pal.glass,'m'));
     o+=Ln(ox,-sill-wh,ox,-sill,SL(c,'l'))+Ln(ox-ow/2,-sill-wh/2,ox+ow/2,-sill-wh/2,SL(c,'l'));
-    o+=R(ox-ow/2-cs*1.6,-sill,ow+cs*3.2,0.25,S(c,lite,'l'));return o+R(-W/2,-h,W,h,SL(c,'m'));}},
+    o+=R(ox-ow/2-cs*1.6,-sill,ow+cs*3.2,0.25,S(c,lite,'l'));return o+wallShade(c,p,W)+R(-W/2,-h,W,h,SL(c,'m'));}},
 archflat:{cat:'Walls & openings',label:'Arch flat',w:8,d:0.33,h:12,color:'#c9b89c',ow:5,layer:2,props:['texture','opening'],
   plan(p,c){const{ow,ox}=openingClamp(p);return wallGap(c,p,ox,ow)+Ln(ox-ow/2,0,ox+ow/2,0,SL(c,'l','stroke-dasharray="0.6 0.35"'));},
-  elev(p,c,W,f){const h=p.h,{ow:o1,ox:x1}=openingClamp(p),ow=o1*f,ox=x1*f,ah=Math.min(o1/2+6.5,h-0.8),rx=ow/2,ry=Math.min(o1/2,ah*0.5);let o=wallElev(c,p,W);
+  elev(p,c,W,f){const h=p.h,{ow:o1,ox:x1}=openingClamp(p),ow=o1*f,ox=x1*f,ah=Math.min(o1/2+6.5,h-0.8),rx=ow/2,ry=Math.min(o1/2,ah*0.5);let o=wallElev(c,p,W,f);
     o+=Pa(`M${n(ox-rx)} 0 V${n(-(ah-ry))} A${n(rx)} ${n(ry)} 0 0 1 ${n(ox+rx)} ${n(-(ah-ry))} V0 Z`,S(c,c.style==='color'?shade(p.color,-0.62):c.pal.paper,'m'));
-    return o+R(-W/2,-h,W,h,SL(c,'m'));}},
+    return o+wallShade(c,p,W)+R(-W/2,-h,W,h,SL(c,'m'));}},
 column:{cat:'Walls & openings',label:'Column',w:1.5,d:1.5,h:12,color:'#e4dccd',layer:2,props:['shape'],shape:'round',
   plan(p,c){const s=S(c,F(c,p,0.1),'m');return p.shape==='round'?El(0,0,p.w/2,p.d/2,s):R(-p.w/2,-p.d/2,p.w,p.d,s);},
   elev(p,c,W){const h=p.h;let o=R(-W*0.38,-h+0.7,W*0.76,h-1.3,S(c,F(c,p)));for(const k of[-0.18,0,0.18])o+=Ln(W*k,-h+0.8,W*k,-0.7,SL(c,'x'));
@@ -512,22 +518,28 @@ const ORDER=Object.keys(TYPES).sort((a,b)=>CATS.indexOf(TYPES[a].cat)-CATS.index
 function defaultStage(type='proscenium'){return{type,prosW:34,prosH:18,depth:28,apron:6,apronShape:'curved',wing:12,stageH:3,thrustW:24,thrustD:14,backW:44,bbW:40,bbD:30,seating:'three',gridH:16,audience:true};}
 function today(){const d=new Date();return d.toISOString().slice(0,10);}
 function blankProject(type){return{v:1,meta:{title:'Untitled Production',playwright:'',designer:'',course:'',instructor:'',venue:'',scene:'',date:today(),notes:''},
-  stage:defaultStage(type),settings:{style:'color',grid:true,gridSize:1,snap:0.5,useSnap:true,labels:true,dims:true,elevPros:true,paper:'tabloid'},pieces:[]};}
+  stage:defaultStage(type),settings:{style:'color',grid:true,gridSize:1,snap:0.5,useSnap:true,labels:true,dims:true,elevPros:true,paper:'tabloid'},
+  box:{back:16,side:12,splay:30,y:18,h:14,backType:'flat',srType:'doorflat',slType:'windowflat',color:'#c9b89c',texture:'none'},pieces:[]};}
 function mk(type,o={}){const t=TYPES[type];return Object.assign({id:uid(),type,name:t.label,x:0,y:10,w:t.w,d:t.d,h:t.h,z:t.z||0,rot:0,color:t.color,texture:t.texture||'none',
   shape:t.shape||'rect',flown:!!t.flown,showLabel:t.showLabel!==false,ow:t.ow||3,ox:0,swing:'L',swingDir:'down',open:t.open??0.9,size:12},o);}
+function boxSet(o){const a=rad(o.splay),B=o.back,L=o.side,out=[];const r2=v=>Math.round(v*100)/100;
+  const back=mk(o.backType,{name:'Upstage wall',x:0,y:o.y,w:B,h:o.h,color:o.color,texture:o.texture,boxset:true});
+  back.ow=o.backType==='archflat'?Math.min(5,B*0.4):o.backType==='windowflat'?4:3;out.push(back);
+  for(const s of[-1,1]){const t=s<0?o.srType:o.slType;
+    const q=mk(t,{name:s<0?'SR wall':'SL wall',x:r2(s*(B/2+Math.sin(a)*L/2)),y:r2(o.y-Math.cos(a)*L/2),w:L,h:o.h,rot:r2(((90-s*o.splay)%360+360)%360),
+      color:o.color,texture:o.texture,swingDir:s<0?'down':'up',ox:t==='flat'?0:r2(L*0.15),ow:t==='windowflat'?4:t==='archflat'?Math.min(5,L*0.4):3,boxset:true});out.push(q);}
+  return out;}
 function sampleProject(){const p=blankProject('proscenium');
   p.meta=Object.assign(p.meta,{title:'Example: The Parlor',playwright:'Sample set to explore, then replace',designer:'Your Name',course:'Intro to Theatre',instructor:'',venue:'Main Stage',scene:'Act I, the parlor',
     notes:'This is an example design. Start over from Project file, or edit these pieces into your own set.'});
-  const wall='#c7b393';
+  const wall='#c7b393';p.box=Object.assign(p.box,{back:17,side:13,splay:32,y:20,h:14,backType:'archflat',srType:'doorflat',slType:'windowflat',color:wall,texture:'stripes'});
   p.pieces=[
     mk('rug',{name:'Area rug',x:0,y:7.5,w:12,d:8}),
     mk('backdrop',{name:'Sky drop',x:0,y:27,w:42,h:22}),
     mk('flat',{name:'Hall backing',x:0,y:25.5,w:10,h:12,color:'#a89478',texture:'paneling'}),
     mk('platform',{name:'Hall landing',x:0,y:23.5,w:9,d:3,h:1.5}),
     mk('stairs',{name:'Hall steps',x:0,y:21.25,w:4,d:1.5,h:1.5}),
-    mk('archflat',{name:'Upstage wall',x:0,y:20,w:17,h:14,ow:5,color:wall,texture:'stripes'}),
-    mk('doorflat',{name:'SR wall',x:-11.25,y:14,w:13.2,h:14,rot:114.6,ox:2.5,color:wall,texture:'stripes'}),
-    mk('windowflat',{name:'SL wall',x:11.25,y:14,w:13.2,h:14,rot:65.4,ox:1,ow:4,color:wall,texture:'stripes'}),
+    ...boxSet(p.box),
     mk('fireplace',{x:-5.6,y:19.2,w:4.5,d:1.2,h:4.5}),
     mk('bookshelf',{x:5.8,y:19.3,w:3.5,d:1,h:7}),
     mk('sofa',{x:0,y:9.5}),
@@ -551,7 +563,7 @@ let hist=[],fut=[];
 const KEY='plasterline.v1';
 
 function normalize(p){const b=blankProject(p?.stage?.type||'proscenium');if(!p||typeof p!=='object')return b;
-  p.meta=Object.assign(b.meta,p.meta||{});p.stage=Object.assign(b.stage,p.stage||{});p.settings=Object.assign(b.settings,p.settings||{});
+  p.meta=Object.assign(b.meta,p.meta||{});p.stage=Object.assign(b.stage,p.stage||{});p.settings=Object.assign(b.settings,p.settings||{});p.box=Object.assign(b.box,p.box||{});
   p.pieces=(Array.isArray(p.pieces)?p.pieces:[]).filter(q=>q&&TYPES[q.type]).map(q=>Object.assign(mk(q.type),q,{id:q.id||uid()}));p.v=1;return p;}
 function load(){try{const s=localStorage.getItem(KEY);if(s)return normalize(JSON.parse(s));}catch(e){}return sampleProject();}
 let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}},300);}
@@ -810,10 +822,30 @@ function thumb(type){const t=TYPES[type];const p=mk(type,{id:'thumb-'+type});if(
     return `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${baseDefs(c)}${type==='note'?T(c,0,0,'Aa',30,{halo:false,w:700}):inner}${c.defs.length?`<defs>${c.defs.join('')}</defs>`:''}</svg>`;}
   const W=p.w,h=p.h,m=Math.max(W,h)*0.08,u=Math.max(W,h)/46;const c=mkCtx('color',1/(72*u),'t'+type);const inner=t.elev(p,c,W,1);
   return `<svg viewBox="${n(-W/2-m)} ${n(-h-m)} ${n(W+2*m)} ${n(h+2*m)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${baseDefs(c)}${inner}${c.defs.length?`<defs>${c.defs.join('')}</defs>`:''}</svg>`;}
-function buildAdd(){let h='<p class="hint">Select a piece to place it center stage, then drag it into position.</p>';
+function buildAdd(){const b=P.box,nb=(l,k,st,mn,mx)=>`<div class="fld"><label for="b-${k}">${l}</label><input type="number" id="b-${k}" data-b="${k}" step="${st}" min="${mn}" max="${mx}" value="${b[k]}"></div>`;
+  const ts=(l,k,opts)=>`<div class="fld"><label for="b-${k}">${l}</label><select id="b-${k}" data-b="${k}">${opts.map(([v,t])=>`<option value="${v}"${b[k]===v?' selected':''}>${t}</option>`).join('')}</select></div>`;
+  const wt=[['flat','Plain wall'],['doorflat','With door'],['windowflat','With window'],['archflat','With archway']];const has=P.pieces.some(q=>q.boxset);
+  let h=`<details class="box" ${has?'':'open'}><summary>Angled box set walls</summary><div class="grp">
+  <p class="hint">Builds a back wall and two side walls that open out toward the audience, joined at the corners, like a room with the front wall removed.${has?' Changes here update your walls right away.':''}</p>
+  ${nb('Back wall width','back',0.5,4,80)}${nb('Side wall length','side',0.5,2,60)}${nb('Splay angle (°)','splay',1,0,75)}<p class="hint" style="margin-top:-4px">0° is straight up and down the stage; 30° to 40° is typical.</p>
+  ${nb('Back wall, feet upstage of PL','y',0.5,0,80)}${nb('Wall height','h',0.5,4,40)}
+  ${ts('Back wall','backType',wt)}${ts('Stage right wall','srType',wt)}${ts('Stage left wall','slType',wt)}
+  <div class="fld"><label for="b-color">Wall color</label><input type="color" id="b-color" data-b="color" value="${b.color}"></div>
+  ${ts('Finish','texture',Object.entries(WALLTEX))}
+  <div class="btnrow"><button class="btn sm primary" id="boxBuild">${has?'Rebuild walls':'Build walls'}</button>${has?'<button class="btn sm danger" id="boxDel">Remove these walls</button>':''}</div>
+  <p class="hint">Rebuilding replaces the three walls it made, so edits made to those walls in the right panel are reset.</p></div></details>`;
+  h+='<p class="hint">Select a piece to place it center stage, then drag it into position.</p>';
   for(const cat of CATS){h+=`<div class="grp"><h3>${cat}</h3><div class="pal">`;for(const k of ORDER){if(TYPES[k].cat!==cat)continue;h+=`<button data-add="${k}" title="Add ${esc(TYPES[k].label)}">${thumb(k)}<span>${esc(TYPES[k].label)}</span></button>`;}h+='</div></div>';}
   $('#pt-add').innerHTML=h;}
-$('#pt-add').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)addPiece(b.dataset.add);});
+function buildBox(){if(sel&&P.pieces.find(q=>q.id===sel&&q.boxset))sel=null;const keep=P.pieces.filter(q=>!q.boxset);const pos=P.pieces.findIndex(q=>q.boxset);
+  const walls=boxSet(P.box);P.pieces=pos<0?keep.concat(walls):[...keep.slice(0,pos),...walls,...keep.slice(pos)];}
+$('#pt-add').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)return addPiece(b.dataset.add);
+  if(e.target.id==='boxBuild'){checkpoint();const had=P.pieces.some(q=>q.boxset);buildBox();buildAdd();renderAll();toast(had?'Walls rebuilt':'Walls built. Adjust the splay angle to open or close the room.');}
+  if(e.target.id==='boxDel'){checkpoint();P.pieces=P.pieces.filter(q=>!q.boxset);if(sel&&!selP())sel=null;buildAdd();renderAll();toast('Box set walls removed');}});
+$('#pt-add').addEventListener('focusin',e=>{if(e.target.dataset.b)checkpoint();});
+$('#pt-add').addEventListener('input',e=>{const k=e.target.dataset.b;if(!k)return;const el=e.target;
+  if(el.type==='number'){const v=parseFloat(el.value);if(!isFinite(v))return;P.box[k]=clamp(v,+el.min,+el.max);}else P.box[k]=el.value;
+  if(P.pieces.some(q=>q.boxset)){buildBox();renderCanvas();renderInspector();renderList();}save();});
 
 function numF(label,k,val,step=0.5,attr='data-s',hint=''){return `<div class="fld"><label for="f-${attr}-${k}">${label}</label><input type="number" id="f-${attr}-${k}" ${attr}="${k}" value="${val}" step="${step}"></div>${hint?`<div class="ft" data-fth="${k}">${hint}</div>`:''}`;}
 function buildStage(){const s=P.stage;let h=`<div class="grp"><h3>Theatre type</h3><div class="fld wide"><select id="f-stype" data-s="type">
@@ -945,8 +977,8 @@ $$('[data-new]').forEach(b=>b.onclick=()=>{if(!b.classList.contains('armed')){$$
   sel=null;Object.keys(VS).forEach(x=>VS[x]={zoom:1,px:0,py:0});buildAll();renderAll();$('#dlgProj').close();toast(k==='sample'?'Example set loaded':'Blank stage ready');});
 
 /* ================= boot ================= */
-function buildAll(){buildStage();buildSheet();}
+function buildAll(){buildAdd();buildStage();buildSheet();}
 P=load();try{const v=localStorage.getItem(KEY+'.view');if(v&&VS[v])view=v;}catch(_){}
-buildAdd();buildAll();renderAll();
+buildAll();renderAll();
 })();
 </script>
