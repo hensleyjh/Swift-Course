@@ -210,7 +210,8 @@ kbd{font-family:var(--f-label);font-size:12px;border:1px solid var(--line);borde
       <button class="btn danger" data-new="proscenium">Blank proscenium stage</button>
       <button class="btn danger" data-new="thrust">Blank thrust stage</button>
       <button class="btn danger" data-new="blackbox">Blank black box</button>
-      <button class="btn danger" data-new="sample">Reload the example parlor set</button>
+      <button class="btn danger" data-new="house">Load the two-level house example</button>
+      <button class="btn danger" data-new="sample">Load the parlor example</button>
     </div>
   </div>
 </div></dialog>
@@ -556,6 +557,51 @@ function sampleProject(){const p=blankProject('proscenium');
     mk('border',{name:'Border 1',x:0,y:4.6,w:46,z:17,h:5}),
   ];return p;}
 
+function houseProject(){const p=blankProject('proscenium');
+  p.meta=Object.assign(p.meta,{title:'Example: Two-Level House',playwright:'Sample set to explore, then replace',designer:'Your Name',course:'Intro to Theatre',venue:'Main Stage',scene:'Living room, kitchen and upstairs bedroom',
+    notes:'Raised bedroom loft at +8\'-0" across the back, reached by stairs along the stage right side. Living room center, kitchen along the stage left wall, dining area down left.'});
+  p.box=Object.assign(p.box,{back:20,side:11,splay:35,y:15,h:10,backType:'flat',srType:'flat',slType:'flat',color:'#efe6cf'});
+  const L=8,wood='#4a3426',a=rad(35),wx=10+Math.sin(a)*5.5,wy=15-Math.cos(a)*5.5,r2=v=>Math.round(v*100)/100;
+  const al=[Math.cos(rad(55)),-Math.sin(rad(55))],inw=[-Math.sin(rad(55)),-Math.cos(rad(55))],at=(t,i)=>[r2(wx+t*al[0]+i*inw[0]),r2(wy+t*al[1]+i*inw[1])];
+  const [cx,cy]=at(-1,1.2),[fx,fy]=at(4,1.35),[rx,ry]=at(-1,2.8);
+  p.pieces=[
+    mk('backdrop',{name:'Sky drop',x:0,y:27,w:42,h:22}),
+    mk('flat',{name:'Back wall',x:0,y:22.2,w:20.5,h:17,color:'#c9d6df',texture:'stripes'}),
+    mk('flat',{name:'Loft wall SR',x:-10.1,y:18.6,w:7.2,h:17,rot:90,color:'#c9d6df'}),
+    mk('flat',{name:'Loft wall SL',x:10.1,y:18.6,w:7.2,h:17,rot:90,color:'#c9d6df'}),
+    mk('platform',{name:'Bedroom loft',x:0,y:18.6,w:20,d:7,h:L,color:wood}),
+    mk('doorflat',{name:'Bedroom door',x:-6.5,y:21.9,w:4,d:0.2,h:7.5,z:L,ow:3,color:'#c9d6df',swingDir:'down',showLabel:false}),
+    mk('bed',{name:'Bed 1',x:-3,y:19.2,w:3.5,d:6,z:L,color:'#e8e4da'}),
+    mk('bed',{name:'Bed 2',x:3,y:19.2,w:3.5,d:6,z:L,color:'#3f5f8a'}),
+    mk('table',{name:'Nightstand',showLabel:false,x:0,y:20.6,w:1.8,d:1.8,h:2.2,z:L,shape:'round',color:'#c8a46a'}),
+    mk('dresser',{x:7.3,y:20.9,w:4,d:1.6,z:L,color:'#a0723f'}),
+    mk('flat',{name:'Loft railing',x:1.75,y:15.25,w:16.5,d:0.25,h:3,z:L,color:'#ece8df',texture:'boards'}),
+    mk('column',{name:'Post SR',x:-9.5,y:15.2,w:1,d:1,h:17,shape:'square',color:'#5b3a29',showLabel:false}),
+    mk('column',{name:'Post SL',x:9.5,y:15.2,w:1,d:1,h:17,shape:'square',color:'#5b3a29',showLabel:false}),
+    mk('stairs',{name:'Stairs to loft',x:-8.25,y:9,w:3.5,d:12,h:L,color:wood}),
+    mk('flat',{name:'SR wall',x:r2(-wx),y:r2(wy),w:11,h:10,rot:125,color:'#8fb3d1',texture:'paneling'}),
+    mk('flat',{name:'SL wall',x:r2(wx),y:r2(wy),w:11,h:10,rot:55,color:'#efe6cf',texture:'tile'}),
+    mk('rug',{name:'Living room rug',showLabel:false,x:0,y:9,w:9,d:7,color:'#e9e2cf'}),
+    mk('sofa',{x:0,y:12.3,w:7,d:3,color:'#5a7048'}),
+    mk('table',{name:'Coffee table',x:0,y:9,w:3,d:3,h:1.5,shape:'round',color:'#8a5a34'}),
+    mk('armchair',{x:-4.6,y:10,rot:-60,color:'#8a2c2c'}),
+    mk('chair',{name:'Rocking chair',x:4.6,y:10.2,w:2,d:2.4,h:3.6,rot:60,color:'#b88a52'}),
+    mk('table',{name:'Side table',x:-5.6,y:7.2,w:1.6,d:1.6,h:2.2,shape:'round',color:'#d9cfb8'}),
+    mk('lamp',{x:-5.6,y:12.3}),
+    mk('box',{name:'TV stand',x:-2.5,y:4.2,w:2.6,d:1.6,h:2.6,color:'#6e5038'}),
+    mk('counter',{name:'Kitchen counter',x:cx,y:cy,w:6.5,d:2,h:3,rot:55,color:'#efe6cf'}),
+    mk('box',{name:'Refrigerator',x:fx,y:fy,w:2.6,d:2.4,h:6,rot:55,color:'#f1efe8'}),
+    mk('rug',{name:'Kitchen runner',showLabel:false,x:rx,y:ry,w:6,d:1.8,rot:55,color:'#8f9c95'}),
+    mk('rug',{name:'Dining rug',showLabel:false,x:9,y:3.4,w:6,d:5,color:'#6f7a6a'}),
+    mk('table',{name:'Dining table',x:9,y:3.4,w:3,d:3,h:2.5,shape:'round',color:'#7a5a3f'}),
+    mk('chair',{name:'Dining chair',x:9,y:5.1,showLabel:false}),mk('chair',{name:'Dining chair',x:9,y:1.7,rot:180,showLabel:false}),
+    mk('chair',{name:'Dining chair',x:7.3,y:3.4,rot:-90,showLabel:false}),mk('chair',{name:'Dining chair',x:10.7,y:3.4,rot:90,showLabel:false}),
+    mk('figure',{name:'Actor (5\'-10")',x:-3.5,y:2.5}),
+    mk('curtain',{x:0,y:0.75,w:37,h:19.5,open:0.9}),
+    mk('leg',{name:'Leg 1 SR',x:-19.5,y:3}),mk('leg',{name:'Leg 1 SL',x:19.5,y:3}),
+    mk('leg',{name:'Leg 2 SR',x:-19.5,y:14}),mk('leg',{name:'Leg 2 SL',x:19.5,y:14}),
+    mk('border',{name:'Border 1',x:0,y:4,w:46,z:18,h:5}),
+  ];return p;}
 let P, sel=null, view='plan', leftTab='add';
 const VS={plan:{zoom:1,px:0,py:0},elev:{zoom:1,px:0,py:0},sheet:{zoom:1,px:0,py:0}};
 let layouts={}, ftPerPx=0.05, curVB=null;
@@ -565,7 +611,7 @@ const KEY='plasterline.v1';
 function normalize(p){const b=blankProject(p?.stage?.type||'proscenium');if(!p||typeof p!=='object')return b;
   p.meta=Object.assign(b.meta,p.meta||{});p.stage=Object.assign(b.stage,p.stage||{});p.settings=Object.assign(b.settings,p.settings||{});p.box=Object.assign(b.box,p.box||{});
   p.pieces=(Array.isArray(p.pieces)?p.pieces:[]).filter(q=>q&&TYPES[q.type]).map(q=>Object.assign(mk(q.type),q,{id:q.id||uid()}));p.v=1;return p;}
-function load(){try{const s=localStorage.getItem(KEY);if(s)return normalize(JSON.parse(s));}catch(e){}return sampleProject();}
+function load(){try{const s=localStorage.getItem(KEY);if(s)return normalize(JSON.parse(s));}catch(e){}return houseProject();}
 let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}},300);}
 function checkpoint(){hist.push(JSON.stringify(P));if(hist.length>200)hist.shift();fut=[];updUndo();}
 function undo(){if(!hist.length)return;fut.push(JSON.stringify(P));P=JSON.parse(hist.pop());if(sel&&!P.pieces.find(q=>q.id===sel))sel=null;renderAll();}
@@ -973,8 +1019,8 @@ function loadData(txt){try{const d=normalize(JSON.parse(txt));checkpoint();P=d;s
 $('#pjLoadText').onclick=()=>loadData($('#pjText').value);
 $('#pjFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadData(r.result);r.readAsText(f);e.target.value='';};
 $$('[data-new]').forEach(b=>b.onclick=()=>{if(!b.classList.contains('armed')){$$('[data-new]').forEach(x=>{x.classList.remove('armed');x.textContent=x.dataset.label||x.textContent;});b.dataset.label=b.textContent;b.classList.add('armed');b.textContent='Select again to replace your design';clearTimeout(b._t);b._t=setTimeout(()=>{b.classList.remove('armed');b.textContent=b.dataset.label;},3500);return;}
-  b.classList.remove('armed');b.textContent=b.dataset.label;checkpoint();const k=b.dataset.new;const keepMeta=P.meta;P=k==='sample'?sampleProject():blankProject(k);if(k!=='sample'){P.meta=Object.assign(P.meta,{designer:keepMeta.designer,course:keepMeta.course,instructor:keepMeta.instructor});}
-  sel=null;Object.keys(VS).forEach(x=>VS[x]={zoom:1,px:0,py:0});buildAll();renderAll();$('#dlgProj').close();toast(k==='sample'?'Example set loaded':'Blank stage ready');});
+  b.classList.remove('armed');b.textContent=b.dataset.label;checkpoint();const k=b.dataset.new;const keepMeta=P.meta;P=k==='sample'?sampleProject():k==='house'?houseProject():blankProject(k);if(k!=='sample'&&k!=='house'){P.meta=Object.assign(P.meta,{designer:keepMeta.designer,course:keepMeta.course,instructor:keepMeta.instructor});}
+  sel=null;Object.keys(VS).forEach(x=>VS[x]={zoom:1,px:0,py:0});buildAll();renderAll();$('#dlgProj').close();toast(k==='sample'||k==='house'?'Example set loaded':'Blank stage ready');});
 
 /* ================= boot ================= */
 function buildAll(){buildAdd();buildStage();buildSheet();}
